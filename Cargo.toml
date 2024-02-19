@@ -26,7 +26,7 @@ members = ["proj-sys"]
 
 [features]
 default = ["geo-types"]
-bundled_proj = [ "proj-sys/bundled_proj" ]
+bundled_proj = [ "proj-sys/bundled_proj", "proj-sys/static_link"]
 pkg_config = [ "proj-sys/pkg_config" ]
 network = ["reqwest", "proj-sys/network"]
 

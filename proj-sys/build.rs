@@ -133,7 +133,32 @@ fn build_from_source() -> Result<std::path::PathBuf, Box<dyn std::error::Error>>
     );
 
     // The PROJ library needs SQLite and the C++ standard library.
-    println!("cargo:rustc-link-lib=dylib=sqlite3");
+    if cfg!(feature = "static_link") {
+        match pkg_config::Config::new()
+            .atleast_version("3.0")
+            .probe("sqlite3")
+        {
+            Ok(pk) => {
+                eprintln!(
+                    "found acceptable sqlite3 installed at: {:?}",
+                    pk.link_paths[0]
+                );
+                println!(
+                    "cargo:rustc-link-search=native={}",
+                    pk.link_paths[0].display()
+                );
+            }
+            Err(err) => {
+                // pkg-config might not even be installed. Let's try to stumble forward
+                // to see if the build succeeds regardless, e.g. if sqlite3 is installed
+                // in some default search path.
+                eprintln!("Failed to find sqlite3 with pkg-config: {err}");
+            }
+        }
+        println!("cargo:rustc-link-lib=static=sqlite3");
+    } else {
+        println!("cargo:rustc-link-lib=dylib=sqlite3");
+    }
 
     if cfg!(feature = "tiff") {
         // On platforms like apples aarch64, users are likely to have installed libtiff with homebrew,
@@ -147,7 +172,10 @@ fn build_from_source() -> Result<std::path::PathBuf, Box<dyn std::error::Error>>
                     "found acceptable libtiff installed at: {:?}",
                     pk.link_paths[0]
                 );
-                println!("cargo:rustc-link-search=native={:?}", pk.link_paths[0]);
+                println!(
+                    "cargo:rustc-link-search=native={}",
+                    pk.link_paths[0].display()
+                );
             }
             Err(err) => {
                 // pkg-config might not even be installed. Let's try to stumble forward
@@ -156,7 +184,11 @@ fn build_from_source() -> Result<std::path::PathBuf, Box<dyn std::error::Error>>
                 eprintln!("Failed to find libtiff with pkg-config: {err}");
             }
         }
-        println!("cargo:rustc-link-lib=dylib=tiff");
+        if cfg!(feature = "static_link") {
+            println!("cargo:rustc-link-lib=static=tiff");
+        } else {
+            println!("cargo:rustc-link-lib=dylib=tiff");
+        }
     }
 
     if cfg!(target_os = "linux") {

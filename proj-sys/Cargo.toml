@@ -23,6 +23,7 @@ tar = "0.4.40"
 [features]
 nobuild = []
 bundled_proj = []
+static_link = []
 # `pkg_config` feature is deprecated and does nothing
 pkg_config = []
 network = ["tiff"]
